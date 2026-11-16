@@ -1,7 +1,7 @@
 import { Op } from "sequelize";
 import { Attendance, Employee } from "../models/index.js";
-import { asyncHandler, parseId, findEmployeeForUser } from "../utils/helpers.js";
-import { ATTENDANCE_STATUSES, lateMinutesFor } from "../utils/hr.js";
+import { asyncHandler, parseId, findEmployeeForUser, paginate } from "../utils/helpers.js";
+import { ATTENDANCE_STATUSES, lateMinutesFor, checkInWindowProblem } from "../utils/hr.js";
 import { localDateISO, monthEndISO } from "../utils/format.js";
 
 const buildRow = (employee, record) => ({
@@ -17,8 +17,6 @@ const buildRow = (employee, record) => ({
   recordId: record ? record.id : null
 });
 
-const ATTENDANCE_PAGE_SIZE = 9;
-
 // /attendance link that keeps the selected date, department and page.
 const attendanceUrl = (date, department = "", page = 1) => {
   const params = new URLSearchParams({ date });
@@ -30,7 +28,6 @@ const attendanceUrl = (date, department = "", page = 1) => {
 export const attendanceIndex = asyncHandler(async (req, res) => {
   const date = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || "") ? req.query.date : localDateISO();
   const department = String(req.query.department || "").trim();
-  const requestedPage = Math.max(1, parseInt(req.query.page, 10) || 1);
 
   const where = { status: ["Active", "On Leave"] };
   if (department) where.department = department;
@@ -51,27 +48,8 @@ export const attendanceIndex = asyncHandler(async (req, res) => {
     unrecorded: rows.filter((r) => r.status === "Not recorded").length
   };
 
-  // The summary counts every employee; the table shows ATTENDANCE_PAGE_SIZE per page.
-  const totalPages = Math.max(1, Math.ceil(rows.length / ATTENDANCE_PAGE_SIZE));
-  const page = Math.min(requestedPage, totalPages);
-  const start = (page - 1) * ATTENDANCE_PAGE_SIZE;
-  const pageRows = rows.slice(start, start + ATTENDANCE_PAGE_SIZE);
-  const pagination = {
-    page,
-    totalPages,
-    count: rows.length,
-    from: rows.length ? start + 1 : 0,
-    to: start + pageRows.length,
-    hasPrev: page > 1,
-    hasNext: page < totalPages,
-    prevUrl: attendanceUrl(date, department, page - 1),
-    nextUrl: attendanceUrl(date, department, page + 1),
-    pages: Array.from({ length: totalPages }, (_, i) => ({
-      number: i + 1,
-      url: attendanceUrl(date, department, i + 1),
-      current: i + 1 === page
-    }))
-  };
+  // The summary counts every employee; the table shows 9 per page.
+  const { rows: pageRows, pagination } = paginate(req, rows);
 
   res.render("attendance", {
     title: "Attendance | DJs HRMS",
@@ -148,6 +126,12 @@ export const checkIn = asyncHandler(async (req, res) => {
   const now = new Date();
   const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
+  const windowProblem = checkInWindowProblem(time);
+  if (windowProblem) {
+    req.flash("error_msg", windowProblem);
+    return res.redirect("/my-attendance");
+  }
+
   const existing = await Attendance.findOne({ where: { employeeId: employee.id, date } });
   if (existing && existing.checkIn) {
     req.flash("error_msg", "You have already checked in today.");
@@ -216,19 +200,22 @@ export const myAttendance = asyncHandler(async (req, res) => {
     order: [["date", "DESC"]]
   });
 
-  const rows = records.map((r) => r.toJSON());
+  const all = records.map((r) => r.toJSON());
+  // The summary counts the whole month; the table shows 9 days per page.
   const summary = {
-    present: rows.filter((r) => r.status === "Present").length,
-    late: rows.filter((r) => r.status === "Late").length,
-    absent: rows.filter((r) => r.status === "Absent").length,
-    halfDay: rows.filter((r) => r.status === "Half Day").length,
-    totalLateMinutes: rows.reduce((sum, r) => sum + Number(r.lateMinutes || 0), 0)
+    present: all.filter((r) => r.status === "Present").length,
+    late: all.filter((r) => r.status === "Late").length,
+    absent: all.filter((r) => r.status === "Absent").length,
+    halfDay: all.filter((r) => r.status === "Half Day").length,
+    totalLateMinutes: all.reduce((sum, r) => sum + Number(r.lateMinutes || 0), 0)
   };
+  const { rows, pagination } = paginate(req, all);
 
   res.render("my-attendance", {
     title: "My Attendance | DJs HRMS",
     employee: employee.toJSON(),
     rows,
+    pagination,
     summary,
     month
   });

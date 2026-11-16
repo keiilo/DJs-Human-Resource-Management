@@ -152,26 +152,7 @@
           </table>
         </div>
 
-        {{#if (gt pagination.totalPages 1)}}
-        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-white/5 px-5 py-4 text-sm no-print">
-          <p class="text-gray-500">Page {{pagination.page}} of {{pagination.totalPages}} · {{pagination.count}} employee(s)</p>
-          <div class="flex flex-wrap items-center gap-2">
-            {{#if pagination.hasPrev}}
-            <a href="{{pagination.prevUrl}}" class="rounded-lg border border-white/10 px-4 py-2 text-gray-300 hover:bg-white/5">← Previous</a>
-            {{/if}}
-            {{#each pagination.pages}}
-              {{#if current}}
-              <span aria-current="page" class="rounded-lg bg-yellow-400 px-3.5 py-2 font-bold text-black">{{number}}</span>
-              {{else}}
-              <a href="{{url}}" class="rounded-lg border border-white/10 px-3.5 py-2 text-gray-300 hover:bg-white/5">{{number}}</a>
-              {{/if}}
-            {{/each}}
-            {{#if pagination.hasNext}}
-            <a href="{{pagination.nextUrl}}" class="rounded-lg border border-white/10 px-4 py-2 text-gray-300 hover:bg-white/5">Next →</a>
-            {{/if}}
-          </div>
-        </div>
-        {{/if}}
+        {{> pagination pagination=pagination label="employee(s)"}}
       </div>
 
     </section>

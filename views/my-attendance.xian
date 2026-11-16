@@ -92,6 +92,7 @@
             </tbody>
           </table>
         </div>
+        {{> pagination pagination=pagination label="day(s)"}}
       </div>
       {{else}}
       <div class="rounded-2xl border border-white/5 bg-[#171717] p-12 text-center">

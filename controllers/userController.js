@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { Op } from "sequelize";
 import { User, Employee } from "../models/index.js";
-import { asyncHandler, parseId } from "../utils/helpers.js";
+import { asyncHandler, parseId, paginate } from "../utils/helpers.js";
 
 const ROLES = ["admin", "staff", "employee"];
 const isEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -30,9 +30,12 @@ export const userList = asyncHandler(async (req, res) => {
     findFreeEmployees()
   ]);
 
+  const { rows, pagination } = paginate(req, users.map((u) => u.toJSON()));
+
   res.render("users", {
     title: "User Accounts | DJs HRMS",
-    users: users.map((u) => u.toJSON()),
+    users: rows,
+    pagination,
     freeEmployees: freeEmployees.map((e) => e.toJSON()),
     roles: ROLES
   });

@@ -86,7 +86,7 @@
       <div class="rounded-2xl border border-white/5 bg-[#171717] overflow-hidden">
         <div class="p-5 border-b border-white/5 flex items-center justify-between">
           <h3 class="font-bold">Leave Requests</h3>
-          <p class="text-xs text-gray-500">{{leaves.length}} record(s)</p>
+          <p class="text-xs text-gray-500">{{pagination.count}} record(s)</p>
         </div>
 
         <div class="overflow-x-auto">
@@ -186,6 +186,7 @@
             </tbody>
           </table>
         </div>
+        {{> pagination pagination=pagination label="request(s)"}}
       </div>
 
     </section>

@@ -82,18 +82,17 @@
               <tr><th class="px-5 py-3">Employee</th><th class="px-5 py-3">Position</th><th class="px-5 py-3"></th></tr>
             </thead>
             <tbody class="divide-y divide-white/5">
-              {{#each employees}}
-                {{#if (eq this.department ../department.name)}}
+              {{#each members}}
                 <tr>
                   <td class="px-5 py-3">{{firstName}} {{lastName}}</td>
                   <td class="px-5 py-3 text-gray-400">{{position}}</td>
                   <td class="px-5 py-3 text-right"><a href="/employees/{{id}}/edit" class="text-xs text-yellow-400 hover:underline">Change department</a></td>
                 </tr>
-                {{/if}}
               {{/each}}
             </tbody>
           </table>
         </div>
+        {{> pagination pagination=pagination label="employee(s)"}}
         <p class="px-5 py-4 text-xs text-gray-500 border-t border-white/5">
           To assign an employee, edit their record and choose this department.
         </p>

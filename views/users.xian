@@ -43,7 +43,7 @@
       <div class="rounded-2xl border border-white/5 bg-[#171717] overflow-hidden">
         <div class="p-5 border-b border-white/5 flex items-center justify-between">
           <h3 class="font-bold">Accounts</h3>
-          <p class="text-xs text-gray-500">{{users.length}} account(s)</p>
+          <p class="text-xs text-gray-500">{{pagination.count}} account(s)</p>
         </div>
 
         <div class="overflow-x-auto">
@@ -126,6 +126,7 @@
             </tbody>
           </table>
         </div>
+        {{> pagination pagination=pagination label="account(s)"}}
 
         <p class="px-5 py-4 text-xs text-gray-500 border-t border-white/5">
           At least one administrator must remain. You cannot remove your own administrator access or delete your own account.

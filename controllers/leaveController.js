@@ -1,6 +1,6 @@
 import { Op } from "sequelize";
 import { Leave, Employee } from "../models/index.js";
-import { asyncHandler, parseId, findEmployeeForUser } from "../utils/helpers.js";
+import { asyncHandler, parseId, findEmployeeForUser, paginate } from "../utils/helpers.js";
 import {
   LEAVE_TYPES,
   LEAVE_ALLOCATION,
@@ -119,10 +119,13 @@ export const leaveList = asyncHandler(async (req, res) => {
     approved: leaves.filter((l) => l.status === "Approved").length,
     rejected: leaves.filter((l) => l.status === "Rejected").length
   };
+  // The summary counts every request; the table shows 9 per page.
+  const { rows: pageLeaves, pagination } = paginate(req, leaves.map((l) => l.toJSON()));
 
   res.render("leaves", {
     title: "Leave Management | DJs HRMS",
-    leaves: leaves.map((l) => l.toJSON()),
+    leaves: pageLeaves,
+    pagination,
     balances,
     employee: employee ? employee.toJSON() : null,
     types: LEAVE_TYPES,

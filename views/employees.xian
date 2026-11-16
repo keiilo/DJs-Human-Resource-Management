@@ -106,19 +106,7 @@
           </table>
         </div>
 
-        <div class="flex items-center justify-between border-t border-white/5 px-5 py-4 text-sm">
-          <p class="text-gray-500">Page {{pagination.page}} of {{pagination.totalPages}} · {{pagination.count}} employee(s)</p>
-          <div class="flex gap-2">
-            {{#if pagination.hasPrev}}
-            <a href="/employees?page={{pagination.prevPage}}&q={{urlEncode filters.q}}&department={{urlEncode filters.department}}&status={{urlEncode filters.status}}"
-               class="rounded-lg border border-white/10 px-4 py-2 text-gray-300 hover:bg-white/5">← Previous</a>
-            {{/if}}
-            {{#if pagination.hasNext}}
-            <a href="/employees?page={{pagination.nextPage}}&q={{urlEncode filters.q}}&department={{urlEncode filters.department}}&status={{urlEncode filters.status}}"
-               class="rounded-lg border border-white/10 px-4 py-2 text-gray-300 hover:bg-white/5">Next →</a>
-            {{/if}}
-          </div>
-        </div>
+        {{> pagination pagination=pagination label="employee(s)"}}
       </div>
 
     </section>
