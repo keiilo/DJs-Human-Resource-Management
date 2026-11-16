@@ -19,16 +19,49 @@
         {{#unless personal}}
           <form method="GET" action="/employees" class="hidden lg:flex items-center gap-2 rounded-xl border border-white/10 bg-[#171717] px-3 py-2">
             <svg class="h-4 w-4 text-gray-500" aria-hidden="true"><use href="#i-search"></use></svg>
-            <input type="search" name="search" placeholder="Search employees, department"
+            <input type="search" name="q" placeholder="Search employees, department"
                    class="w-56 bg-transparent text-sm text-gray-200 placeholder-gray-600 outline-none">
           </form>
 
-          <a href="/leaves?status=Pending" class="relative grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-[#171717] text-gray-400 hover:text-yellow-400" aria-label="Pending leave requests">
-            <svg class="h-[18px] w-[18px]" aria-hidden="true"><use href="#i-bell"></use></svg>
-            {{#if stats.pendingLeaves}}
-            <span class="absolute -right-1 -top-1 grid h-5 min-w-[20px] place-items-center rounded-full bg-yellow-400 px-1 text-[10px] font-bold text-black">{{stats.pendingLeaves}}</span>
-            {{/if}}
-          </a>
+          {{!-- Notifications: opens a panel of pending leave requests instead of leaving the page.
+                data-user-menu lets the footer script close it on an outside click or Esc. --}}
+          <details class="relative no-print" data-user-menu>
+            <summary class="relative grid h-10 w-10 cursor-pointer list-none place-items-center rounded-xl border border-white/10 bg-[#171717] text-gray-400 hover:text-yellow-400 [&::-webkit-details-marker]:hidden" aria-label="Notifications: {{stats.pendingLeaves}} pending leave request(s)">
+              <svg class="h-[18px] w-[18px]" aria-hidden="true"><use href="#i-bell"></use></svg>
+              {{#if stats.pendingLeaves}}
+              <span class="absolute -right-1 -top-1 grid h-5 min-w-[20px] place-items-center rounded-full bg-yellow-400 px-1 text-[10px] font-bold text-black">{{stats.pendingLeaves}}</span>
+              {{/if}}
+            </summary>
+
+            <div class="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-white/10 bg-[#171717] shadow-2xl shadow-black/40">
+              <div class="flex items-center justify-between border-b border-white/5 px-4 py-3">
+                <p class="text-sm font-bold">Notifications</p>
+                {{#if stats.pendingLeaves}}
+                <span class="rounded-full bg-yellow-400/10 px-2 py-0.5 text-[11px] font-semibold text-yellow-400">{{stats.pendingLeaves}} pending</span>
+                {{/if}}
+              </div>
+
+              {{#if recentLeaves.length}}
+              <ul class="max-h-80 divide-y divide-white/5 overflow-y-auto">
+                {{#each recentLeaves}}
+                <li>
+                  <a href="/leaves?status=Pending&employeeId={{employee.id}}" class="flex items-start gap-3 px-4 py-3 transition hover:bg-yellow-400/5">
+                    <span class="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-yellow-400/10 text-xs font-bold text-yellow-400">{{employee.firstName.[0]}}{{employee.lastName.[0]}}</span>
+                    <span class="min-w-0">
+                      <span class="block truncate text-sm"><span class="font-semibold">{{employee.firstName}} {{employee.lastName}}</span> filed {{type}} leave</span>
+                      <span class="block text-xs text-gray-500">{{formatDate startDate}} – {{formatDate endDate}} · {{days}} day(s) · waiting for review</span>
+                    </span>
+                  </a>
+                </li>
+                {{/each}}
+              </ul>
+              {{else}}
+              <p class="px-4 py-8 text-center text-sm text-gray-500">You're all caught up. No pending leave requests.</p>
+              {{/if}}
+
+              <a href="/leaves?status=Pending" class="block border-t border-white/5 px-4 py-3 text-center text-xs font-semibold text-yellow-400 hover:bg-yellow-400/5">View all in Leave Management →</a>
+            </div>
+          </details>
         {{/unless}}
 
         <button type="button" data-theme-toggle aria-pressed="false" aria-label="Switch to light mode" title="Switch to light mode"
