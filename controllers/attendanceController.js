@@ -17,9 +17,20 @@ const buildRow = (employee, record) => ({
   recordId: record ? record.id : null
 });
 
+const ATTENDANCE_PAGE_SIZE = 9;
+
+// /attendance link that keeps the selected date, department and page.
+const attendanceUrl = (date, department = "", page = 1) => {
+  const params = new URLSearchParams({ date });
+  if (department) params.set("department", department);
+  if (page > 1) params.set("page", String(page));
+  return `/attendance?${params.toString()}`;
+};
+
 export const attendanceIndex = asyncHandler(async (req, res) => {
   const date = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || "") ? req.query.date : localDateISO();
   const department = String(req.query.department || "").trim();
+  const requestedPage = Math.max(1, parseInt(req.query.page, 10) || 1);
 
   const where = { status: ["Active", "On Leave"] };
   if (department) where.department = department;
@@ -40,11 +51,34 @@ export const attendanceIndex = asyncHandler(async (req, res) => {
     unrecorded: rows.filter((r) => r.status === "Not recorded").length
   };
 
+  // The summary counts every employee; the table shows ATTENDANCE_PAGE_SIZE per page.
+  const totalPages = Math.max(1, Math.ceil(rows.length / ATTENDANCE_PAGE_SIZE));
+  const page = Math.min(requestedPage, totalPages);
+  const start = (page - 1) * ATTENDANCE_PAGE_SIZE;
+  const pageRows = rows.slice(start, start + ATTENDANCE_PAGE_SIZE);
+  const pagination = {
+    page,
+    totalPages,
+    count: rows.length,
+    from: rows.length ? start + 1 : 0,
+    to: start + pageRows.length,
+    hasPrev: page > 1,
+    hasNext: page < totalPages,
+    prevUrl: attendanceUrl(date, department, page - 1),
+    nextUrl: attendanceUrl(date, department, page + 1),
+    pages: Array.from({ length: totalPages }, (_, i) => ({
+      number: i + 1,
+      url: attendanceUrl(date, department, i + 1),
+      current: i + 1 === page
+    }))
+  };
+
   res.render("attendance", {
     title: "Attendance | DJs HRMS",
     date,
     department,
-    rows,
+    rows: pageRows,
+    pagination,
     summary,
     statuses: ATTENDANCE_STATUSES,
     departments: await Employee.findAll({
@@ -59,10 +93,16 @@ export const recordAttendance = asyncHandler(async (req, res) => {
   const employeeId = parseId(req.body.employeeId);
   const date = /^\d{4}-\d{2}-\d{2}$/.test(req.body.date || "") ? req.body.date : localDateISO();
   const employee = employeeId ? await Employee.findByPk(employeeId) : null;
+  // Return to the same filter and page the Edit modal was opened from.
+  const backUrl = attendanceUrl(
+    date,
+    String(req.body.department || "").trim(),
+    Math.max(1, parseInt(req.body.page, 10) || 1)
+  );
 
   if (!employee) {
     req.flash("error_msg", "Select a valid employee.");
-    return res.redirect(`/attendance?date=${date}`);
+    return res.redirect(backUrl);
   }
 
   const checkIn = String(req.body.checkIn || "").trim() || null;
@@ -93,7 +133,7 @@ export const recordAttendance = asyncHandler(async (req, res) => {
     req.flash("success_msg", `Attendance recorded for ${employee.firstName} ${employee.lastName}.`);
   }
 
-  res.redirect(`/attendance?date=${date}`);
+  res.redirect(backUrl);
 });
 
 export const checkIn = asyncHandler(async (req, res) => {
