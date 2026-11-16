@@ -13,6 +13,12 @@ export const startOfMonthISO = (date = new Date()) =>
 export const endOfMonthISO = (date = new Date()) =>
   localDateISO(new Date(date.getFullYear(), date.getMonth() + 1, 0));
 
+// Last day of a "YYYY-MM" month (2026-11 -> 2026-11-30, 2026-02 -> 2026-02-28).
+export const monthEndISO = (month) => {
+  const [y, m] = String(month).split("-").map(Number);
+  return localDateISO(new Date(y, m, 0));
+};
+
 export const formatDate = (value) => {
   if (!value) return "—";
   if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {

@@ -3,6 +3,7 @@
     Built on the XianFire Framework (Christian I. Cabrera, Mindoro State University)
 */
 
+import "./config/env.js"; // must stay first: loads .env before anything reads process.env
 import express from "express";
 import path from "path";
 import fs from "fs";

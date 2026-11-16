@@ -1,19 +1,39 @@
 import bcrypt from "bcrypt";
+import { Op } from "sequelize";
 import { User, Employee } from "../models/index.js";
 import { asyncHandler, parseId } from "../utils/helpers.js";
 
 const ROLES = ["admin", "staff", "employee"];
 const isEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-export const userList = asyncHandler(async (req, res) => {
-  const users = await User.findAll({
-    include: [{ model: Employee, as: "employee", attributes: ["id", "firstName", "lastName", "employeeCode"] }],
-    order: [["id", "ASC"]]
+// Employees that no account is linked to yet.
+const findFreeEmployees = async () => {
+  const linked = await User.findAll({
+    attributes: ["employeeId"],
+    where: { employeeId: { [Op.ne]: null } },
+    raw: true
   });
+  const linkedIds = linked.map((row) => row.employeeId);
+  return Employee.findAll({
+    attributes: ["id", "firstName", "lastName", "employeeCode"],
+    where: linkedIds.length ? { id: { [Op.notIn]: linkedIds } } : {},
+    order: [["lastName", "ASC"], ["firstName", "ASC"]]
+  });
+};
+
+export const userList = asyncHandler(async (req, res) => {
+  const [users, freeEmployees] = await Promise.all([
+    User.findAll({
+      include: [{ model: Employee, as: "employee", attributes: ["id", "firstName", "lastName", "employeeCode"] }],
+      order: [["id", "ASC"]]
+    }),
+    findFreeEmployees()
+  ]);
 
   res.render("users", {
     title: "User Accounts | DJs HRMS",
     users: users.map((u) => u.toJSON()),
+    freeEmployees: freeEmployees.map((e) => e.toJSON()),
     roles: ROLES
   });
 });
@@ -38,21 +58,74 @@ export const createUser = asyncHandler(async (req, res) => {
     return res.redirect("/users");
   }
 
-  // Link the new account to a matching employee record when one exists.
+  // An admin-created account may be linked to the employee with the same email,
+  // but only when that employee has no account yet.
   const employee = await Employee.findOne({ where: { email }, order: [["id", "ASC"]] });
+  const employeeTaken = employee ? await User.findOne({ where: { employeeId: employee.id } }) : null;
+  const linkTo = employee && !employeeTaken ? employee : null;
 
   await User.create({
     name,
     email,
     role,
     password: await bcrypt.hash(password, 10),
-    employeeId: employee ? employee.id : null
+    employeeId: linkTo ? linkTo.id : null
   });
 
+  const linkNote = linkTo
+    ? ` Linked to ${linkTo.firstName} ${linkTo.lastName}.`
+    : " Not linked to an employee yet; use Manage > Link to employee.";
   req.flash(
     "success_msg",
-    `Account created for ${email}. Share the temporary password securely; the user can change it from My Profile.`
+    `Account created for ${email}.${linkNote} Share the temporary password securely; the user can change it from My Profile.`
   );
+  res.redirect("/users");
+});
+
+export const linkUserEmployee = asyncHandler(async (req, res) => {
+  const id = parseId(req.params.id);
+  const user = id ? await User.findByPk(id) : null;
+
+  if (!user) {
+    req.flash("error_msg", "Account not found.");
+    return res.redirect("/users");
+  }
+
+  const raw = String(req.body.employeeId ?? "").trim();
+
+  if (raw === "") {
+    if (!user.employeeId) {
+      req.flash("success_msg", `${user.name} is not linked to an employee.`);
+      return res.redirect("/users");
+    }
+    await user.update({ employeeId: null });
+    req.flash("success_msg", `${user.name} is no longer linked to an employee record.`);
+    return res.redirect("/users");
+  }
+
+  const employeeId = parseId(raw);
+  const employee = employeeId ? await Employee.findByPk(employeeId) : null;
+  if (!employee) {
+    req.flash("error_msg", "Select a valid employee.");
+    return res.redirect("/users");
+  }
+
+  if (user.employeeId === employee.id) {
+    req.flash("success_msg", `${user.name} is already linked to ${employee.firstName} ${employee.lastName}.`);
+    return res.redirect("/users");
+  }
+
+  const other = await User.findOne({ where: { employeeId: employee.id, id: { [Op.ne]: user.id } } });
+  if (other) {
+    req.flash(
+      "error_msg",
+      `${employee.firstName} ${employee.lastName} is already linked to ${other.email}. Unlink that account first.`
+    );
+    return res.redirect("/users");
+  }
+
+  await user.update({ employeeId: employee.id });
+  req.flash("success_msg", `${user.name} is now linked to ${employee.firstName} ${employee.lastName}.`);
   res.redirect("/users");
 });
 

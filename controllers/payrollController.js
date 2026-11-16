@@ -2,7 +2,7 @@ import { Op } from "sequelize";
 import { Payroll, Employee } from "../models/index.js";
 import { asyncHandler, parseId, parseMoney, findEmployeeForUser } from "../utils/helpers.js";
 import { isValidDate } from "../utils/hr.js";
-import { startOfMonthISO, endOfMonthISO, localDateISO } from "../utils/format.js";
+import { startOfMonthISO, endOfMonthISO, localDateISO, monthEndISO } from "../utils/format.js";
 
 const PAYROLL_STATUSES = ["Draft", "Processed", "Paid"];
 
@@ -12,8 +12,9 @@ export const payrollList = asyncHandler(async (req, res) => {
     ? req.query.month
     : localDateISO().slice(0, 7);
 
+  const monthEnd = monthEndISO(month);
   const where = {
-    periodStart: { [Op.between]: [`${month}-01`, `${month}-31`] }
+    periodStart: { [Op.between]: [`${month}-01`, monthEnd] }
   };
   if (status) where.status = status;
 
@@ -38,6 +39,7 @@ export const payrollList = asyncHandler(async (req, res) => {
     rows,
     summary,
     month,
+    monthEnd,
     status,
     statuses: PAYROLL_STATUSES
   });
@@ -120,7 +122,8 @@ export const payrollShow = asyncHandler(async (req, res) => {
 
   if (res.locals.isLimited) {
     const employee = await findEmployeeForUser(req.user);
-    if (!employee || payroll.employeeId !== employee.id) {
+    // Employees see only their own payslips, and never a Draft.
+    if (!employee || payroll.employeeId !== employee.id || payroll.status === "Draft") {
       return res.status(403).render("403", { title: "Access Denied | DJs HRMS" });
     }
   }
@@ -184,7 +187,7 @@ export const myPayslips = asyncHandler(async (req, res) => {
   }
 
   const records = await Payroll.findAll({
-    where: { employeeId: employee.id },
+    where: { employeeId: employee.id, status: { [Op.ne]: "Draft" } },
     order: [["periodEnd", "DESC"]]
   });
 

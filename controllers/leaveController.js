@@ -8,13 +8,11 @@ import {
   isValidDate
 } from "../utils/hr.js";
 
-const currentYearRange = () => {
-  const year = new Date().getFullYear();
-  return [`${year}-01-01`, `${year}-12-31`];
-};
+const yearRange = (year = new Date().getFullYear()) => [`${year}-01-01`, `${year}-12-31`];
 
-export const computeBalances = async (employeeId) => {
-  const [start, end] = currentYearRange();
+// Approved leave used per type within one calendar year (default: this year).
+export const computeBalances = async (employeeId, year = new Date().getFullYear()) => {
+  const [start, end] = yearRange(year);
   const approved = await Leave.findAll({
     where: {
       employeeId,
@@ -36,6 +34,36 @@ export const computeBalances = async (employeeId) => {
     const allocation = LEAVE_ALLOCATION[type] ?? 0;
     return { type, allocation, used, remaining: Math.max(0, allocation - used) };
   });
+};
+
+// Returns an error message when the leave needs more days than the employee has left
+// in any calendar year it touches, or null when the balance is enough. Unpaid has no limit.
+export const balanceProblem = async (employeeId, type, startDate, endDate) => {
+  if (type === "Unpaid") return null;
+
+  const firstYear = Number(String(startDate).slice(0, 4));
+  const lastYear = Number(String(endDate).slice(0, 4));
+
+  for (let year = firstYear; year <= lastYear; year += 1) {
+    const [yearStart, yearEnd] = yearRange(year);
+    const from = startDate > yearStart ? startDate : yearStart;
+    const to = endDate < yearEnd ? endDate : yearEnd;
+    const needed = leaveDays(from, to);
+    if (!needed) continue;
+
+    const balance = (await computeBalances(employeeId, year)).find((b) => b.type === type);
+    const allocation = balance ? balance.allocation : 0;
+    const remaining = balance ? balance.remaining : 0;
+
+    if (needed > remaining) {
+      return (
+        `Not enough ${type} leave for ${year}: ${needed} day(s) requested, ` +
+        `${remaining} of ${allocation} left. File the extra days as Unpaid leave.`
+      );
+    }
+  }
+
+  return null;
 };
 
 const employeeName = (employee) =>
@@ -165,6 +193,17 @@ export const leaveCreate = asyncHandler(async (req, res) => {
 
   const days = leaveDays(startDate, endDate);
 
+  if (days === 0) {
+    req.flash("error_msg", "Those dates are all rest days, so there is nothing to file.");
+    return res.redirect("/leaves/create");
+  }
+
+  const problem = await balanceProblem(employeeId, type, startDate, endDate);
+  if (problem) {
+    req.flash("error_msg", problem);
+    return res.redirect("/leaves/create");
+  }
+
   await Leave.create({
     employeeId,
     type,
@@ -191,6 +230,13 @@ export const leaveApprove = asyncHandler(async (req, res) => {
 
   if (leave.status !== "Pending") {
     req.flash("error_msg", "Only pending requests can be approved.");
+    return res.redirect("/leaves");
+  }
+
+  // Re-check: other leaves may have been approved since this one was filed.
+  const problem = await balanceProblem(leave.employeeId, leave.type, leave.startDate, leave.endDate);
+  if (problem) {
+    req.flash("error_msg", problem);
     return res.redirect("/leaves");
   }
 

@@ -32,7 +32,7 @@
           <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Work email</label>
           <input id="email" type="email" name="email" required autocomplete="email" placeholder="you@company.com"
                  class="w-full rounded-xl border border-white/10 bg-[#171717] px-4 py-3 text-sm outline-none focus:border-yellow-400/60 focus:ring-2 focus:ring-yellow-400/20">
-          <p class="mt-2 text-[11px] text-gray-600">Use the email on your employee record to link your profile automatically.</p>
+          <p class="mt-2 text-[11px] text-gray-600">After you register, HR links your account to your employee record.</p>
         </div>
 
         <div>

@@ -59,6 +59,7 @@ import {
   createUser,
   resetUserPassword,
   updateUserRole,
+  linkUserEmployee,
   deleteUser
 } from "../controllers/userController.js";
 import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
@@ -135,6 +136,7 @@ router.get("/users", requireRole("admin"), userList);
 router.post("/users", requireRole("admin"), createUser);
 router.post("/users/:id/password", requireRole("admin"), resetUserPassword);
 router.post("/users/:id/role", requireRole("admin"), updateUserRole);
+router.post("/users/:id/employee", requireRole("admin"), linkUserEmployee);
 router.post("/users/:id/delete", requireRole("admin"), deleteUser);
 
 export default router;

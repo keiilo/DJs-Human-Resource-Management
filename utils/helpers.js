@@ -24,22 +24,11 @@ export const generateEmployeeCode = async () => {
   return code;
 };
 
+// Only an explicit link (set by an administrator) gives an account access to an employee record.
+// Matching by email is not used: anyone could register with an employee's email address.
 export const findEmployeeForUser = async (user) => {
-  if (!user) return null;
-
-  let employee = user.employeeId ? await Employee.findByPk(user.employeeId) : null;
-
-  if (!employee && user.email) {
-    employee = await Employee.findOne({
-      where: { email: String(user.email).toLowerCase() },
-      order: [["id", "ASC"]]
-    });
-    if (employee && !user.employeeId) {
-      await user.update({ employeeId: employee.id });
-    }
-  }
-
-  return employee;
+  if (!user || !user.employeeId) return null;
+  return Employee.findByPk(user.employeeId);
 };
 
 export const getDepartmentNames = async () => {

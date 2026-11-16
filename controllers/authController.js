@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { User, Employee } from "../models/index.js";
+import { User } from "../models/index.js";
 import { asyncHandler } from "../utils/helpers.js";
 
 const cleanEmail = (value) => String(value || "").trim().toLowerCase();
@@ -74,24 +74,19 @@ export const registerUser = asyncHandler(async (req, res) => {
     return res.redirect("/register");
   }
 
-  // Public sign-ups are always employees; roles are elevated by an administrator.
-  const employee = await Employee.findOne({ where: { email }, order: [["id", "ASC"]] });
+  // Public sign-ups are always unlinked employees. Only an administrator links an account
+  // to an employee record (User Accounts > Manage > Link to employee).
   const hashed = await bcrypt.hash(password, 10);
   const user = await User.create({
     name,
     email,
     password: hashed,
     role: "employee",
-    employeeId: employee ? employee.id : null
+    employeeId: null
   });
 
   await startSession(req, user);
-  req.flash(
-    "success_msg",
-    employee
-      ? "Account created. Your employee record is now linked."
-      : "Account created. Ask HR to link your employee record."
-  );
+  req.flash("success_msg", "Account created. Ask HR to link your employee record.");
   res.redirect("/dashboard");
 });
 

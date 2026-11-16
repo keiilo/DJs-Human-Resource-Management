@@ -46,16 +46,6 @@ const readEmployeeForm = (body) => {
   return { data, errors };
 };
 
-// Links a matching unlinked account (same email) to an employee record.
-const linkAccount = async (employee) => {
-  if (!employee || !employee.email) return;
-  const account = await User.findOne({
-    where: { email: employee.email, employeeId: null },
-    order: [["id", "ASC"]]
-  });
-  if (account) await account.update({ employeeId: employee.id });
-};
-
 const ensureUnique = async (data, ignoreId = null) => {
   const errors = [];
   const codeWhere = { employeeCode: data.employeeCode };
@@ -148,7 +138,6 @@ export const employeeCreate = asyncHandler(async (req, res) => {
   }
 
   const employee = await Employee.create(data);
-  await linkAccount(employee);
 
   req.flash("success_msg", `Employee ${employee.firstName} ${employee.lastName} was added.`);
   res.redirect(`/employees/${employee.id}`);
@@ -223,7 +212,6 @@ export const employeeUpdate = asyncHandler(async (req, res) => {
   }
 
   await employee.update(data);
-  await linkAccount(employee);
 
   req.flash("success_msg", "Employee record updated.");
   res.redirect(`/employees/${employee.id}`);
