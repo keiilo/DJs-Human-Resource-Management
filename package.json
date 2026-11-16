@@ -4,6 +4,10 @@
   "description": "XianFire Framework project",
   "main": "index.js",
   "type": "module",
+  "nodemonConfig": {
+    "ext": "js,json,xian",
+    "ignore": ["node_modules/*", "public/*"]
+  },
   "bin": {
     "xian": "./bin/xian.js"
   },

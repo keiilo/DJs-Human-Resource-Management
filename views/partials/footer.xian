@@ -1,7 +1,3 @@
-  <footer class="mt-10 py-6 text-center text-xs text-gray-600 no-print">
-    © 2026 DJs Human Resource Management System · Powered by XianFire Framework
-  </footer>
-
   <!--
     Modals (every page):
     - <details data-modal> + <summary> + <div data-modal-panel><div data-modal-box>…</div></div>

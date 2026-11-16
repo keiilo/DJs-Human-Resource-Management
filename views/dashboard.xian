@@ -5,7 +5,7 @@
 
   {{> sidebar}}
 
-  <main class="flex-1 min-w-0">
+  <main class="flex-1 min-w-0 flex flex-col">
 
     <header class="bg-[#111111] border-b border-white/5 px-5 md:px-8 py-4 flex flex-wrap items-center justify-between gap-4 no-print">
       <div class="min-w-0">
@@ -415,6 +415,7 @@
       {{/if}}
 
     </section>
+    {{> page-footer}}
   </main>
 </div>
 

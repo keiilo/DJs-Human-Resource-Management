@@ -5,7 +5,7 @@
 
   {{> sidebar}}
 
-  <main class="flex-1 min-w-0">
+  <main class="flex-1 min-w-0 flex flex-col">
 
     <header class="bg-[#111111] border-b border-yellow-500/20 px-6 py-5">
       <div class="flex flex-wrap items-center justify-between gap-4">
@@ -189,6 +189,7 @@
       </div>
 
     </section>
+    {{> page-footer}}
   </main>
 </div>
 
