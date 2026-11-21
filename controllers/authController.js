@@ -26,10 +26,6 @@ export const registerPage = (req, res) => {
   res.render("register", { title: "Register | DJs HRMS" });
 };
 
-export const forgotPasswordPage = (req, res) => {
-  res.render("forgotpassword", { title: "Forgot Password | DJs HRMS" });
-};
-
 export const loginUser = asyncHandler(async (req, res) => {
   const email = cleanEmail(req.body.email);
   const password = String(req.body.password || "");

@@ -1,7 +1,8 @@
 import bcrypt from "bcrypt";
 import { Op } from "sequelize";
-import { User, Employee } from "../models/index.js";
+import { User, Employee, PasswordReset } from "../models/index.js";
 import { asyncHandler, parseId, paginate } from "../utils/helpers.js";
+import { openResetRequests } from "./passwordResetController.js";
 
 const ROLES = ["admin", "staff", "employee"];
 const isEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -22,13 +23,17 @@ const findFreeEmployees = async () => {
 };
 
 export const userList = asyncHandler(async (req, res) => {
-  const [users, freeEmployees] = await Promise.all([
+  const [users, freeEmployees, resetRequests] = await Promise.all([
     User.findAll({
       include: [{ model: Employee, as: "employee", attributes: ["id", "firstName", "lastName", "employeeCode"] }],
       order: [["id", "ASC"]]
     }),
-    findFreeEmployees()
+    findFreeEmployees(),
+    openResetRequests()
   ]);
+  // Shown once, right after "Generate link" (see passwordResetController.issueResetLink).
+  const resetLink = req.flash("reset_link").pop() || null;
+  const resetEmail = req.flash("reset_email").pop() || null;
 
   const { rows, pagination } = paginate(req, users.map((u) => u.toJSON()));
 
@@ -37,7 +42,10 @@ export const userList = asyncHandler(async (req, res) => {
     users: rows,
     pagination,
     freeEmployees: freeEmployees.map((e) => e.toJSON()),
-    roles: ROLES
+    roles: ROLES,
+    resetRequests,
+    resetLink,
+    resetEmail
   });
 });
 
@@ -147,6 +155,11 @@ export const resetUserPassword = asyncHandler(async (req, res) => {
   }
 
   await user.update({ password: await bcrypt.hash(password, 10) });
+  // A forgot-password request for this account is answered by this reset.
+  await PasswordReset.update(
+    { status: "Used", usedAt: new Date(), tokenHash: null },
+    { where: { userId: user.id, status: { [Op.in]: ["Pending", "Issued"] } } }
+  );
   req.flash("success_msg", `Password reset for ${user.email}.`);
   res.redirect("/users");
 });

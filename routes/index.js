@@ -3,7 +3,6 @@ import { homePage } from "../controllers/homeController.js";
 import {
   loginPage,
   registerPage,
-  forgotPasswordPage,
   loginUser,
   registerUser,
   logoutUser,
@@ -62,6 +61,14 @@ import {
   linkUserEmployee,
   deleteUser
 } from "../controllers/userController.js";
+import {
+  forgotPasswordPage,
+  forgotPasswordRequest,
+  resetPasswordPage,
+  resetPasswordSubmit,
+  issueResetLink,
+  dismissResetRequest
+} from "../controllers/passwordResetController.js";
 import { requireAuth, requireRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -75,6 +82,9 @@ router.post("/login", loginUser);
 router.get("/register", registerPage);
 router.post("/register", registerUser);
 router.get("/forgot-password", forgotPasswordPage);
+router.post("/forgot-password", forgotPasswordRequest);
+router.get("/reset-password/:token", resetPasswordPage);
+router.post("/reset-password/:token", resetPasswordSubmit);
 router.get("/logout", requireAuth, logoutUser);
 
 // DASHBOARD
@@ -138,5 +148,7 @@ router.post("/users/:id/password", requireRole("admin"), resetUserPassword);
 router.post("/users/:id/role", requireRole("admin"), updateUserRole);
 router.post("/users/:id/employee", requireRole("admin"), linkUserEmployee);
 router.post("/users/:id/delete", requireRole("admin"), deleteUser);
+router.post("/password-requests/:id/issue", requireRole("admin"), issueResetLink);
+router.post("/password-requests/:id/dismiss", requireRole("admin"), dismissResetRequest);
 
 export default router;

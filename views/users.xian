@@ -16,6 +16,84 @@
 
       {{> flash}}
 
+      {{#if resetLink}}
+      <div class="rounded-2xl border border-yellow-500/30 bg-yellow-500/5 p-5">
+        <h3 class="font-bold text-yellow-400">Reset link for {{resetEmail}}</h3>
+        <p class="mt-1 text-xs text-gray-400">Give this link to the user privately. It is shown only now, works once, and expires in 30 minutes.</p>
+        <div class="mt-3 flex flex-col sm:flex-row gap-2">
+          <input id="resetLinkField" type="text" readonly value="{{resetLink}}" onclick="this.select()"
+                 class="flex-1 min-w-0 rounded-xl border border-white/10 bg-[#0F0F0F] px-4 py-2.5 text-xs text-gray-200 outline-none">
+          <button type="button" id="copyResetLink" class="rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-bold text-black hover:bg-yellow-300">Copy link</button>
+        </div>
+      </div>
+      <script>
+        document.getElementById("copyResetLink").addEventListener("click", async (event) => {
+          const field = document.getElementById("resetLinkField");
+          field.select();
+          try { await navigator.clipboard.writeText(field.value); } catch { document.execCommand("copy"); }
+          event.currentTarget.textContent = "Copied";
+        });
+      </script>
+      {{/if}}
+
+      {{#if resetRequests.length}}
+      <div class="rounded-2xl border border-white/5 bg-[#171717] overflow-hidden">
+        <div class="p-5 border-b border-white/5 flex items-center justify-between gap-3">
+          <div>
+            <h3 class="font-bold">Password Requests</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Sent from "Forgot password?" on the login page. Check that the request is really from this person before giving a link.</p>
+          </div>
+          <span class="rounded-full bg-yellow-400 px-2.5 py-0.5 text-xs font-bold text-black">{{resetRequests.length}}</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-white/5 text-gray-400 uppercase text-[11px]">
+              <tr>
+                <th class="px-5 py-3">Account</th>
+                <th class="px-5 py-3">Requested</th>
+                <th class="px-5 py-3">Status</th>
+                <th class="px-5 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              {{#each resetRequests}}
+              <tr class="hover:bg-white/5">
+                <td class="px-5 py-4">
+                  <p class="font-medium">{{user.name}}</p>
+                  <p class="text-xs text-gray-500 break-all">{{user.email}} · {{user.role}}</p>
+                </td>
+                <td class="px-5 py-4 text-gray-400">{{formatDateTime updatedAt}}</td>
+                <td class="px-5 py-4">
+                  {{#if expired}}
+                  <span class="inline-block whitespace-nowrap rounded-full bg-gray-500/15 px-2.5 py-1 text-xs text-gray-400">Link expired</span>
+                  {{else}}{{#if (eq status "Issued")}}
+                  <span class="inline-block rounded-full bg-blue-500/15 px-2.5 py-1 text-xs text-blue-400">Link given · expires {{formatDateTime expiresAt}}</span>
+                  {{else}}
+                  <span class="inline-block whitespace-nowrap rounded-full bg-yellow-500/15 px-2.5 py-1 text-xs text-yellow-400">Waiting</span>
+                  {{/if}}{{/if}}
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex justify-end gap-2">
+                    <form method="POST" action="/password-requests/{{id}}/issue"
+                          data-confirm-title="Create a reset link?" data-confirm="A one-time link for {{user.email}} will be shown. Any earlier link for this request stops working." data-confirm-ok="Create link" data-confirm-tone="info">
+                      <button type="submit" class="rounded-lg bg-yellow-400 px-3 py-2 text-xs font-bold text-black hover:bg-yellow-300">
+                        {{#if (eq status "Pending")}}Generate link{{else}}New link{{/if}}
+                      </button>
+                    </form>
+                    <form method="POST" action="/password-requests/{{id}}/dismiss"
+                          data-confirm-title="Dismiss this request?" data-confirm="The request from {{user.email}} will be closed and its link will stop working." data-confirm-ok="Dismiss">
+                      <button type="submit" class="rounded-lg bg-white/5 px-3 py-2 text-xs text-gray-300 hover:bg-white/10">Dismiss</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {{/if}}
+
       <form method="POST" action="/users" class="rounded-2xl border border-white/5 bg-[#171717] p-5">
         <h3 class="font-bold mb-4">Create Account</h3>
 

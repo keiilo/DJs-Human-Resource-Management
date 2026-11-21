@@ -5,6 +5,7 @@ import Department from "./DepartmentModel.js";
 import Attendance from "./AttendanceModel.js";
 import Leave from "./LeaveModel.js";
 import Payroll from "./PayrollModel.js";
+import PasswordReset from "./PasswordResetModel.js";
 
 // Accounts <-> employee records
 User.belongsTo(Employee, { foreignKey: "employeeId", as: "employee" });
@@ -28,10 +29,14 @@ Employee.hasMany(Payroll, { foreignKey: "employeeId", as: "payrolls", onDelete: 
 Payroll.belongsTo(Employee, { foreignKey: "employeeId", as: "employee" });
 Payroll.belongsTo(User, { foreignKey: "processedBy", as: "processor", onDelete: "SET NULL" });
 
+// Forgot-password requests
+User.hasMany(PasswordReset, { foreignKey: "userId", as: "passwordResets", onDelete: "CASCADE" });
+PasswordReset.belongsTo(User, { foreignKey: "userId", as: "user", onDelete: "CASCADE" });
+
 export const syncDatabase = async () => {
   await sequelize.authenticate();
   // Never force/alter: only creates missing tables (existing data is preserved).
   await sequelize.sync();
 };
 
-export { sequelize, User, Employee, Department, Attendance, Leave, Payroll };
+export { sequelize, User, Employee, Department, Attendance, Leave, Payroll, PasswordReset };
