@@ -37,7 +37,7 @@
       {{/if}}
 
       {{#if resetRequests.length}}
-      <div class="rounded-2xl border border-white/5 bg-[#171717] overflow-hidden">
+      <div id="password-requests" class="rounded-2xl border border-white/5 bg-[#171717] overflow-hidden">
         <div class="p-5 border-b border-white/5 flex items-center justify-between gap-3">
           <div>
             <h3 class="font-bold">Password Requests</h3>

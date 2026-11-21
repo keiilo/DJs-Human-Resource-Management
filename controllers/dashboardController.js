@@ -2,6 +2,7 @@ import { fn, col, Op } from "sequelize";
 import { Employee, Department, Attendance, Leave, Payroll } from "../models/index.js";
 import { asyncHandler, findEmployeeForUser } from "../utils/helpers.js";
 import { localDateISO, startOfMonthISO, formatMoney, formatDate } from "../utils/format.js";
+import { openResetRequests } from "./passwordResetController.js";
 
 const WEEK_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -142,6 +143,8 @@ export const dashboard = asyncHandler(async (req, res) => {
 
   const presentToday = todayAttendance.filter((a) => ["Present", "Late", "Half Day"].includes(a.status)).length;
   const payrollTotal = monthPayroll.reduce((sum, p) => sum + Number(p.netSalary || 0), 0);
+  // "Forgot password" requests are answered by the administrator only.
+  const passwordRequests = res.locals.isAdmin ? await openResetRequests() : [];
 
   res.render("dashboard", {
     title: "Dashboard | DJs HRMS",
@@ -160,6 +163,8 @@ export const dashboard = asyncHandler(async (req, res) => {
     departmentStats,
     recentEmployees: recentEmployees.map((e) => e.toJSON()),
     recentLeaves: pendingLeaves.map((l) => l.toJSON()),
+    passwordRequests,
+    notificationCount: pendingLeaveCount + passwordRequests.length,
     today,
     monthLabel: formatDate(monthStart)
   });
