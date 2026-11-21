@@ -19,7 +19,7 @@ with MySQL, Sequelize and server-rendered `.xian` (Handlebars) views styled with
 | **Payroll** | Admin creates payroll per period: net pay = basic + allowances + overtime − deductions. Status goes Draft → Processed → Paid. Employees see only their own non-draft payslips. |
 | **Reports** | Printable employee, department, attendance, leave and payroll reports for a date range. |
 | **User Accounts** | Admin creates accounts, changes roles, resets passwords and links an account to an employee record. |
-| **Forgot password** | A user requests a reset from the login page; the admin sees it under User Accounts > Password Requests and generates a one-time link (valid 30 minutes) to give the user, who then sets a new password. |
+| **Forgot password** | A user requests a reset from the login page and sees "Waiting for HR approval". The admin is notified in the bell and approves it under User Accounts > Password Requests; the user's waiting page then opens "Set a new password" by itself. If the user closed the page, the admin can send a one-time link instead. Approvals and links last 30 minutes and work once. |
 
 Every table shows 9 rows per page. Deletes and other final actions ask for confirmation in a dialog.
 The interface has a dark and a light theme.
@@ -129,9 +129,10 @@ or writes through the models, and a `.xian` view renders the page.
 ## Security
 
 - Passwords are hashed with bcrypt.
-- Password reset links hold a random 256-bit token. Only its SHA-256 hash is stored, the link works
-  once and expires after 30 minutes, and the forgot-password form gives the same answer whether or
-  not the email exists.
+- Password resets: the reset token (256-bit) and the waiting browser's secret are stored only as
+  SHA-256 hashes. Only the browser that sent the request can continue after approval, a reset works
+  once and expires after 30 minutes, and the forgot-password page looks the same whether or not the
+  email exists.
 - Sessions use an `httpOnly`, `sameSite` cookie that expires after 8 hours, and the session ID is
   regenerated at login.
 - A failed login always says "Invalid email or password", so it does not reveal which emails exist.

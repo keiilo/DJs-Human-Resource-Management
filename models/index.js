@@ -33,10 +33,32 @@ Payroll.belongsTo(User, { foreignKey: "processedBy", as: "processor", onDelete: 
 User.hasMany(PasswordReset, { foreignKey: "userId", as: "passwordResets", onDelete: "CASCADE" });
 PasswordReset.belongsTo(User, { foreignKey: "userId", as: "user", onDelete: "CASCADE" });
 
+// Adds columns that exist on a model but not yet in its table (new fields on an existing table).
+const addMissingColumns = async () => {
+  const queryInterface = sequelize.getQueryInterface();
+  for (const model of Object.values(sequelize.models)) {
+    const table = model.getTableName();
+    const existing = await queryInterface.describeTable(table);
+    for (const [name, attribute] of Object.entries(model.rawAttributes)) {
+      const column = attribute.field || name;
+      if (existing[column] || attribute.type?.key === "VIRTUAL") continue;
+      const { type, allowNull, defaultValue } = attribute;
+      // NOT NULL only when a default can fill existing rows; no UNIQUE here (added only on new tables).
+      await queryInterface.addColumn(table, column, {
+        type,
+        allowNull: allowNull !== false || defaultValue === undefined,
+        defaultValue
+      });
+      console.log(`  ➕ Added ${table}.${column}`);
+    }
+  }
+};
+
 export const syncDatabase = async () => {
   await sequelize.authenticate();
   // Never force/alter: only creates missing tables (existing data is preserved).
   await sequelize.sync();
+  await addMissingColumns();
 };
 
 export { sequelize, User, Employee, Department, Attendance, Leave, Payroll, PasswordReset };

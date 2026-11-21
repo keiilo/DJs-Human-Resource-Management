@@ -51,7 +51,7 @@
                     </span>
                     <span class="min-w-0">
                       <span class="block truncate text-sm"><span class="font-semibold">{{user.name}}</span> forgot their password</span>
-                      <span class="block truncate text-xs text-gray-500">{{user.email}} · {{#if (eq status "Issued")}}link given{{else}}give a reset link in User Accounts{{/if}}</span>
+                      <span class="block truncate text-xs text-gray-500">{{user.email}} · {{#if approved}}approved, waiting for them{{else}}{{#if linkGiven}}link given{{else}}approve it in User Accounts{{/if}}{{/if}}</span>
                     </span>
                   </a>
                 </li>

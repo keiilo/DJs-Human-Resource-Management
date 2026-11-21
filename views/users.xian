@@ -41,7 +41,7 @@
         <div class="p-5 border-b border-white/5 flex items-center justify-between gap-3">
           <div>
             <h3 class="font-bold">Password Requests</h3>
-            <p class="text-xs text-gray-500 mt-0.5">Sent from "Forgot password?" on the login page. Check that the request is really from this person before giving a link.</p>
+            <p class="text-xs text-gray-500 mt-0.5">Sent from "Forgot password?" on the login page. Make sure the request is really from that person, then approve. Their waiting page opens "Set a new password" by itself.</p>
           </div>
           <span class="rounded-full bg-yellow-400 px-2.5 py-0.5 text-xs font-bold text-black">{{resetRequests.length}}</span>
         </div>
@@ -65,19 +65,27 @@
                 <td class="px-5 py-4 text-gray-400">{{formatDateTime updatedAt}}</td>
                 <td class="px-5 py-4">
                   {{#if expired}}
-                  <span class="inline-block whitespace-nowrap rounded-full bg-gray-500/15 px-2.5 py-1 text-xs text-gray-400">Link expired</span>
-                  {{else}}{{#if (eq status "Issued")}}
-                  <span class="inline-block rounded-full bg-blue-500/15 px-2.5 py-1 text-xs text-blue-400">Link given · expires {{formatDateTime expiresAt}}</span>
+                  <span class="inline-block whitespace-nowrap rounded-full bg-gray-500/15 px-2.5 py-1 text-xs text-gray-400">Expired</span>
+                  {{else}}{{#if approved}}
+                  <span class="inline-block rounded-full bg-green-500/15 px-2.5 py-1 text-xs text-green-400">Approved · until {{formatDateTime expiresAt}}</span>
+                  {{else}}{{#if linkGiven}}
+                  <span class="inline-block rounded-full bg-blue-500/15 px-2.5 py-1 text-xs text-blue-400">Link given · until {{formatDateTime expiresAt}}</span>
                   {{else}}
-                  <span class="inline-block whitespace-nowrap rounded-full bg-yellow-500/15 px-2.5 py-1 text-xs text-yellow-400">Waiting</span>
-                  {{/if}}{{/if}}
+                  <span class="inline-block whitespace-nowrap rounded-full bg-yellow-500/15 px-2.5 py-1 text-xs text-yellow-400">Waiting for approval</span>
+                  {{/if}}{{/if}}{{/if}}
                 </td>
                 <td class="px-5 py-4">
-                  <div class="flex justify-end gap-2">
+                  <div class="flex flex-wrap items-center justify-end gap-2">
+                    {{#if canApprove}}
+                    <form method="POST" action="/password-requests/{{id}}/approve"
+                          data-confirm-title="Approve this request?" data-confirm="Make sure the request is really from {{user.name}} ({{user.email}}). Their waiting page will open &quot;Set a new password&quot; right away." data-confirm-ok="Approve" data-confirm-tone="success">
+                      <button type="submit" class="whitespace-nowrap rounded-lg bg-yellow-400 px-3 py-2 text-xs font-bold text-black hover:bg-yellow-300">Approve</button>
+                    </form>
+                    {{/if}}
                     <form method="POST" action="/password-requests/{{id}}/issue"
-                          data-confirm-title="Create a reset link?" data-confirm="A one-time link for {{user.email}} will be shown. Any earlier link for this request stops working." data-confirm-ok="Create link" data-confirm-tone="info">
-                      <button type="submit" class="rounded-lg bg-yellow-400 px-3 py-2 text-xs font-bold text-black hover:bg-yellow-300">
-                        {{#if (eq status "Pending")}}Generate link{{else}}New link{{/if}}
+                          data-confirm-title="Send a link instead?" data-confirm="A one-time link for {{user.email}} will be shown for you to copy and send. Use this only if the person closed their waiting page." data-confirm-ok="Create link" data-confirm-tone="info">
+                      <button type="submit" class="whitespace-nowrap rounded-lg bg-white/5 px-3 py-2 text-xs text-gray-300 hover:bg-white/10">
+                        {{#if linkGiven}}New link{{else}}Send link instead{{/if}}
                       </button>
                     </form>
                     <form method="POST" action="/password-requests/{{id}}/dismiss"

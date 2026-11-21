@@ -64,8 +64,11 @@ import {
 import {
   forgotPasswordPage,
   forgotPasswordRequest,
+  forgotPasswordStatus,
+  forgotPasswordCancel,
   resetPasswordPage,
   resetPasswordSubmit,
+  approveResetRequest,
   issueResetLink,
   dismissResetRequest
 } from "../controllers/passwordResetController.js";
@@ -83,6 +86,8 @@ router.get("/register", registerPage);
 router.post("/register", registerUser);
 router.get("/forgot-password", forgotPasswordPage);
 router.post("/forgot-password", forgotPasswordRequest);
+router.get("/forgot-password/status", forgotPasswordStatus);
+router.post("/forgot-password/cancel", forgotPasswordCancel);
 router.get("/reset-password/:token", resetPasswordPage);
 router.post("/reset-password/:token", resetPasswordSubmit);
 router.get("/logout", requireAuth, logoutUser);
@@ -148,6 +153,7 @@ router.post("/users/:id/password", requireRole("admin"), resetUserPassword);
 router.post("/users/:id/role", requireRole("admin"), updateUserRole);
 router.post("/users/:id/employee", requireRole("admin"), linkUserEmployee);
 router.post("/users/:id/delete", requireRole("admin"), deleteUser);
+router.post("/password-requests/:id/approve", requireRole("admin"), approveResetRequest);
 router.post("/password-requests/:id/issue", requireRole("admin"), issueResetLink);
 router.post("/password-requests/:id/dismiss", requireRole("admin"), dismissResetRequest);
 
